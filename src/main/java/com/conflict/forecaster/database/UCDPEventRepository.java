@@ -1,6 +1,5 @@
-package com.conflict.forecaster.repo;
+package com.conflict.forecaster.database;
 
-import com.conflict.forecaster.models.entities.UCDPEvent;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;

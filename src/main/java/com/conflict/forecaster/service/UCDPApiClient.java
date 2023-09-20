@@ -1,7 +1,7 @@
-package com.conflict.forecaster.models;
+package com.conflict.forecaster.service;
 
-import com.conflict.forecaster.models.entities.UCDPEvent;
-import com.conflict.forecaster.repo.UCDPEventRepository;
+import com.conflict.forecaster.database.UCDPEvent;
+import com.conflict.forecaster.database.UCDPEventRepository;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
