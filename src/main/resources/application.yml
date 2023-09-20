@@ -1,0 +1,8 @@
+spring:
+    datasource:
+        password: 1111
+        url: jdbc:postgresql://localhost:5432/Conflict-Forecaster-DB
+        username: postgres
+    jpa:
+        hibernate:
+            ddl-auto: update
