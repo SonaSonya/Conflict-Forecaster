@@ -6,3 +6,12 @@ spring:
     jpa:
         hibernate:
             ddl-auto: update
+arima:
+    parameters:
+        p: 3
+        d: 0
+        q: 3
+        P: 1
+        D: 1
+        Q: 0
+        m: 0
