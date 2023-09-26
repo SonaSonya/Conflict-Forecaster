@@ -15,4 +15,14 @@ public interface UCDPEventRepository extends CrudRepository<UCDPEvent, Long> {
             "group by country_id, \"month\", \"year\", \"type_of_violence\";", nativeQuery = true)
     List<Object[]> findCounts();
 
+    // Найти запись с самым ранним значением года и месяца
+    List<UCDPEvent> findFirst1ByOrderByYearDescMonthDesc ();
+
+    // Найти запись с самым поздним значением года и месяца
+    List<UCDPEvent> findFirst1ByOrderByYearAscMonthAsc ();
+
+    // Вывести список стран
+    @Query("select distinct a.country_id, a.country from UCDPEvent a")
+    List<Object[]> findCountries();
+
 }
