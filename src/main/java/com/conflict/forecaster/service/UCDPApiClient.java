@@ -1,6 +1,6 @@
 package com.conflict.forecaster.service;
 
-import com.conflict.forecaster.database.UCDPEvent;
+import com.conflict.forecaster.database.entity.UCDPEvent;
 import com.conflict.forecaster.database.UCDPEventRepository;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;

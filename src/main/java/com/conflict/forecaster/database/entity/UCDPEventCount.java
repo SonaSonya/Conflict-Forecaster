@@ -1,4 +1,4 @@
-package com.conflict.forecaster.database;
+package com.conflict.forecaster.database.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
