@@ -112,7 +112,7 @@ public class UCDPApiClient {
         while (i < versions.length) {
             // Для каждой версии (месяца)
 
-            String url = getUrl(country, versions[i], 10, 0);
+            String url = getUrl(country, versions[i], 1000, 0);
 
             while (!url.equals("")) {
                 // Для каждой страницы
@@ -133,7 +133,7 @@ public class UCDPApiClient {
 
     // Запрос JSON событий из api ucdp
     public JSONObject requestEvents (String url) throws IOException, ParseException {
-
+        // TODO: Заменить на RestTemplate
         URL objURL = new URL(url);
         HttpURLConnection connection = (HttpURLConnection) objURL.openConnection();
 
