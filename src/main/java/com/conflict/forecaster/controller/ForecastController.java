@@ -1,5 +1,6 @@
 package com.conflict.forecaster.controller;
 
+import com.conflict.forecaster.service.PredictionService;
 import com.conflict.forecaster.service.UCDPApiClient;
 import com.conflict.forecaster.database.UCDPEventCountRepository;
 import com.conflict.forecaster.database.UCDPEventRepository;
@@ -23,6 +24,9 @@ public class ForecastController {
     private UCDPApiClient api;
     @Autowired
     private UCDPEventService ucdpEventService;
+
+    @Autowired
+    private PredictionService predictionService;
 
     @Autowired
     private UCDPEventRepository ucdpEventRepository;
@@ -61,15 +65,12 @@ public class ForecastController {
     }
 
     @GetMapping("/forecaster/predict")
-    public String predict(@RequestParam(name="country_id", required=true) int countryId,
+    public ObjectNode predict(@RequestParam(name="country_id", required=true) int countryId,
                           @RequestParam(name="violence_type", required=true) int violenceType,
                           @RequestParam(name="timespan", required=true) int timespan,
                           Model model) {
 
-        // TODO: Получение предсказания для страны, типа насилия и временного промежутка
-
-        // TODO: array of objects like { month: 2, amount: 34 } where amount is the number of violences
-        return "";
+        return predictionService.predict(countryId,violenceType,timespan);
     }
 
 //    // Подсчет количества событий определенного типа и запись в базу данных
