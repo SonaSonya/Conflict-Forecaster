@@ -13,4 +13,8 @@ public interface UCDPEventCountRepository extends CrudRepository<UCDPEventCount,
 
     @Query("SELECT u FROM UCDPEventCount u WHERE u.countryId = :countryId AND u.typeOfViolence = :typeOfViolence ORDER BY u.year, u.month")
     List<UCDPEventCount> findByCountryIdAndTypeOfViolence(@Param("countryId") int countryId, @Param("typeOfViolence") int typeOfViolence);
+
+    UCDPEventCount findFirstByOrderByYearDescMonthDesc();
+    UCDPEventCount findFirstByOrderByYearAscMonthAsc();
+
 }
