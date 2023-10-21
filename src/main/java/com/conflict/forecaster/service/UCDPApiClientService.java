@@ -6,8 +6,9 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,7 +19,7 @@ import java.time.LocalDateTime;
 import java.util.Iterator;
 
 @Service
-public class UCDPApiClient {
+public class UCDPApiClientService {
 
     int[] africanCountries  = {
             615, // Algeria
@@ -81,10 +82,11 @@ public class UCDPApiClient {
             "22.0.1", "22.0.2", "22.0.3", "22.0.4", "22.0.5", "22.0.6", "22.0.7", "22.0.8", "22.0.9", "22.0.10", "22.0.11", "22.0.12",
     };
 
-    @Autowired
     private UCDPEventRepository ucdpEventRepository;
+    private int rowsSaved;
 
-    public UCDPApiClient() {
+    public UCDPApiClientService(UCDPEventRepository ucdpEventRepository) {
+        this.ucdpEventRepository = ucdpEventRepository;
     }
 
     // Сохранение событий из UCDP за 2018-2022 годы для всех африканских стран (для заполнения таблицы, использовалась 1 раз)
@@ -106,8 +108,9 @@ public class UCDPApiClient {
     }
 
     // Запрос событий из UCDP для страны и версий (месяцев), сохранение результатов в базу
-    public void saveEvents (int country, String[] versions) throws IOException, ParseException {
+    public int saveEvents (int country, String[] versions) throws IOException, ParseException {
 
+        this.rowsSaved = 0;
         var i = 0;
         while (i < versions.length) {
             // Для каждой версии (месяца)
@@ -124,6 +127,8 @@ public class UCDPApiClient {
 
             i++;
         }
+
+        return this.rowsSaved;
     }
 
     // Функция генерации url для доступа к api ucdp
@@ -133,22 +138,10 @@ public class UCDPApiClient {
 
     // Запрос JSON событий из api ucdp
     public JSONObject requestEvents (String url) throws IOException, ParseException {
-        // TODO: Заменить на RestTemplate
-        URL objURL = new URL(url);
-        HttpURLConnection connection = (HttpURLConnection) objURL.openConnection();
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<String> responseEntity = restTemplate.getForEntity(url, String.class);
 
-        connection.setRequestMethod("GET");
-
-        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        String inputLine;
-        StringBuffer response = new StringBuffer();
-
-        while ((inputLine = in.readLine()) != null) {
-            response.append(inputLine);
-        }
-        in.close();
-
-        return parseJSONEvent(response.toString());
+        return parseJSONEvent(responseEntity.getBody());
     }
 
     // Считывание json из строки
@@ -220,6 +213,7 @@ public class UCDPApiClient {
 
             UCDPEvent ucdpEvent = new UCDPEvent(id_ucdp, year, month, type_of_violence, conflict_name, dyad_name, side_a, side_b, adm_1, adm_2, country, region, date_start, date_end, conflict_id, dyad_id, side_a_id, side_b_id, priogrid_gid, country_id, date_prec, deaths_a, deaths_b, deaths_civilians, deaths_unknown, deaths_all, latitude, longitude);
             ucdpEventRepository.save(ucdpEvent);
+            this.rowsSaved++;
         }
     }
 

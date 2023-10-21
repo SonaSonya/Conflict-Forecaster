@@ -1,14 +1,15 @@
 package com.conflict.forecaster.controller;
 
 import com.conflict.forecaster.service.PredictionService;
-import com.conflict.forecaster.service.UCDPApiClient;
+import com.conflict.forecaster.service.UCDPApiClientService;
 import com.conflict.forecaster.database.UCDPEventCountRepository;
 import com.conflict.forecaster.database.UCDPEventRepository;
 import com.conflict.forecaster.service.UCDPEventService;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.ui.Model;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -20,57 +21,64 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class ForecastController {
 
-    @Autowired
-    private UCDPApiClient api;
-    @Autowired
+    private UCDPApiClientService api;
     private UCDPEventService ucdpEventService;
-
-    @Autowired
     private PredictionService predictionService;
 
     @Autowired
-    private UCDPEventRepository ucdpEventRepository;
-    @Autowired
-    private UCDPEventCountRepository ucdpEventCountRepository;
+    public ForecastController (UCDPApiClientService api, UCDPEventService ucdpEventService, PredictionService predictionService) {
+        this.api = api;
+        this.ucdpEventService = ucdpEventService;
+        this.predictionService = predictionService;
+    }
 
-    // Сохранение событий ucdp в базу проекта
-    @PostMapping("/forecaster/data/initialize")
-    public String initialize(@RequestParam(name="start_date", required=true, defaultValue="18.0.1") String startDate,
-                             @RequestParam(name="end_date", required=true, defaultValue="23.0.7") String endDate,
-                             Model model) throws IOException, ParseException {
+    @GetMapping("/test")
+    public ResponseEntity<String> test() throws IOException, ParseException {
 
         //TODO: Если в базе уже есть данные, то они удаляются
 
-        //api.saveEvents2018_2022();
+        int rowsSaved = api.saveEvents(501, new String[]{"20.0.8"});
 
         //TODO: На выходе количество записанных строк
-        return "";
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+    // Сохранение событий ucdp в базу проекта
+    @PostMapping("/forecaster/data/initialize")
+    public ResponseEntity<String> initialize(@RequestParam(name="start_date", required=true, defaultValue="18.0.1") String startDate,
+                                             @RequestParam(name="end_date", required=true, defaultValue="23.0.7") String endDate) throws IOException, ParseException {
+
+        //TODO: Если в базе уже есть данные, то они удаляются
+
+        //int rowsSaved = api.saveEvents2018_2022();
+
+        //TODO: На выходе количество записанных строк
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @PostMapping("/forecaster/data/update")
-    public String update(@RequestParam(name="end_date", required=true) String endDate,
-                         Model model) throws IOException, ParseException {
+    public ResponseEntity<String> update(@RequestParam(name="end_date", required=true) String endDate) throws IOException, ParseException {
 
         //TODO: Определение последней записанной даты в базе
         //TODO: Добавление к базе новых значений по датам
 
         //TODO: На выходе количество записанных строк
-        return "";
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     // Получение статуса по загруженным данным, какие даты и страны в наличии
     @GetMapping("/forecaster/data/status")
-    public ObjectNode status(Model model) {
-        return ucdpEventService.getStatus();
+    public ResponseEntity<ObjectNode> status() {
+        ObjectNode status = ucdpEventService.getStatus();
+        return new ResponseEntity<>(status, HttpStatus.OK);
     }
 
     @GetMapping("/forecaster/predict")
-    public ObjectNode predict(@RequestParam(name="country_id", required=true) int countryId,
+    public ResponseEntity<ObjectNode> predict(@RequestParam(name="country_id", required=true) int countryId,
                           @RequestParam(name="violence_type", required=true) int violenceType,
-                          @RequestParam(name="timespan", required=true) int timespan,
-                          Model model) {
+                          @RequestParam(name="timespan", required=true) int timespan) {
 
-        return predictionService.predict(countryId,violenceType,timespan);
+        ObjectNode prediction = predictionService.predict(countryId,violenceType,timespan);
+        return new ResponseEntity<>(prediction, HttpStatus.OK);
     }
 
 //    // Подсчет количества событий определенного типа и запись в базу данных

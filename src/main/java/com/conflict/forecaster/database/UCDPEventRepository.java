@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface UCDPEventRepository extends CrudRepository<UCDPEvent, Long> {
+public interface UCDPEventRepository extends CrudRepository<UCDPEvent, Long>, CountryDataUCDPEventRepository {
 
     // Запрос подсчета количества событий из базы
     @Query(value = "select country_id, \"year\", \"month\", \"type_of_violence\",  sum(deaths_all), count(*) from ucdpevent \n" +
@@ -20,9 +20,5 @@ public interface UCDPEventRepository extends CrudRepository<UCDPEvent, Long> {
 
     // Найти запись с самым поздним значением года и месяца
     List<UCDPEvent> findFirst1ByOrderByYearAscMonthAsc ();
-
-    // Вывести список стран
-    @Query("select distinct a.country_id, a.country from UCDPEvent a")
-    List<Object[]> findCountries();
 
 }

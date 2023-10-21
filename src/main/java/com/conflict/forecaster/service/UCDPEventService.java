@@ -1,5 +1,6 @@
 package com.conflict.forecaster.service;
 
+import com.conflict.forecaster.database.CountryData;
 import com.conflict.forecaster.database.entity.UCDPEvent;
 import com.conflict.forecaster.database.UCDPEventCountRepository;
 import com.conflict.forecaster.database.UCDPEventRepository;
@@ -14,25 +15,29 @@ import java.util.List;
 @Service
 public class UCDPEventService {
 
-    @Autowired
     private UCDPEventCountRepository ucdpEventCountRepository;
-    @Autowired
     private UCDPEventRepository ucdpEventRepository;
+
+    @Autowired
+    public UCDPEventService (UCDPEventCountRepository ucdpEventCountRepository, UCDPEventRepository ucdpEventRepository){
+        this.ucdpEventCountRepository = ucdpEventCountRepository;
+        this.ucdpEventRepository = ucdpEventRepository;
+    }
 
     public ObjectNode getStatus () {
         UCDPEvent earliestEvent = ucdpEventRepository.findFirst1ByOrderByYearDescMonthDesc().get(0);
         UCDPEvent latestEvent = ucdpEventRepository.findFirst1ByOrderByYearAscMonthAsc().get(0);
-        List<Object[]> countries = ucdpEventRepository.findCountries();
+        List<CountryData> countries = ucdpEventRepository.findCountries();
 
         ObjectMapper mapper = new ObjectMapper();
         ArrayNode countriesNode = mapper.createArrayNode();
         ObjectNode status = mapper.createObjectNode();
 
-        for (Object[] country : countries)
+        for (CountryData country : countries)
         {
             ObjectNode countryNode = mapper.createObjectNode();
-            countryNode.put("id", country[0].toString());
-            countryNode.put("name", country[1].toString());
+            countryNode.put("id", country.getCountry_id());
+            countryNode.put("name", country.getCountry());
 
             countriesNode.add(countryNode);
         }
