@@ -1,5 +1,6 @@
 package com.conflict.forecaster.database.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 @Entity
@@ -9,12 +10,23 @@ public class UCDPEvent {
         @GeneratedValue(strategy = GenerationType.AUTO)
         private Long id;
 
+        @JsonProperty("id")
         private Long id_ucdp;
 
         private int year, month, type_of_violence;
         private String conflict_name, dyad_name, side_a, side_b, adm_1, adm_2, country, region, date_start, date_end;
-        private Long conflict_id, dyad_id, side_a_id, side_b_id, priogrid_gid, country_id, date_prec;
-        private Long deaths_a, deaths_b, deaths_civilians, deaths_unknown, deaths_all;
+        @JsonProperty("conflict_new_id")
+        private Long conflict_id;
+        @JsonProperty("dyad_new_id")
+        private Long dyad_id;
+        @JsonProperty("side_a_new_id")
+        private Long side_a_id;
+        @JsonProperty("side_b_new_id")
+        private Long side_b_id;
+        private Long priogrid_gid, country_id, date_prec;
+        private Long deaths_a, deaths_b, deaths_civilians, deaths_unknown;
+        @JsonProperty("best")
+        private Long deaths_all;
         private double latitude, longitude;
 
         // Конструкторы
@@ -22,7 +34,6 @@ public class UCDPEvent {
         }
 
         public UCDPEvent(Long id_ucdp, int year, int month, int type_of_violence, String conflict_name, String dyad_name, String side_a, String side_b, String adm_1, String adm_2, String country, String region, String date_start, String date_end, Long conflict_id, Long dyad_id, Long side_a_id, Long side_b_id, Long priogrid_gid, Long country_id, Long date_prec, Long deaths_a, Long deaths_b, Long deaths_civilians, Long deaths_unknown, Long deaths_all, double latitude, double longitude) {
-                this.id = id;
                 this.id_ucdp = id_ucdp;
                 this.year = year;
                 this.month = month;
@@ -61,11 +72,11 @@ public class UCDPEvent {
         public void setId(Long id) {
                 this.id = id;
         }
-
+        @JsonProperty("id")
         public Long getId_ucdp() {
                 return id_ucdp;
         }
-
+        @JsonProperty("id")
         public void setId_ucdp(Long id_ucdp) {
                 this.id_ucdp = id_ucdp;
         }

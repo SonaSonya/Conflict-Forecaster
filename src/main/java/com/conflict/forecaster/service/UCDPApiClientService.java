@@ -2,6 +2,10 @@ package com.conflict.forecaster.service;
 
 import com.conflict.forecaster.database.entity.UCDPEvent;
 import com.conflict.forecaster.database.UCDPEventRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -16,7 +20,10 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 
 @Service
 public class UCDPApiClientService {
@@ -117,12 +124,12 @@ public class UCDPApiClientService {
 
             String url = getUrl(country, versions[i], 1000, 0);
 
-            while (!url.equals("")) {
-                // Для каждой страницы
-                JSONObject events = requestEvents(url);
+            while (!url.isEmpty()) {
+                String json = requestEvents(url);
+                List<UCDPEvent> events = extractObjectsFromJson(json);
                 saveEventResponse(events);
 
-                url = getNextPageUrl(events);
+                url = getNextPageUrl(json);
             }
 
             i++;
@@ -137,127 +144,55 @@ public class UCDPApiClientService {
     }
 
     // Запрос JSON событий из api ucdp
-    public JSONObject requestEvents (String url) throws IOException, ParseException {
+    public String requestEvents (String url) {
         RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> responseEntity = restTemplate.getForEntity(url, String.class);
 
-        return parseJSONEvent(responseEntity.getBody());
+        return restTemplate.getForObject(url, String.class);
     }
 
-    // Считывание json из строки
-    public JSONObject parseJSONEvent (String event) throws ParseException {
-        // Считываем json
-        Object obj = new JSONParser().parse(event);
+    public List<UCDPEvent> extractObjectsFromJson(String json) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
 
-        // Кастим obj в JSONObject
-        JSONObject jo = (JSONObject) obj;
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        JsonNode rootNode = objectMapper.readTree(json);
 
-        return jo;
+        JsonNode dataNode = rootNode.get("Result");
+        if (dataNode != null && dataNode.isArray()) {
+            List<UCDPEvent> events = new ArrayList<>();
+
+            for (JsonNode item : dataNode) {
+                UCDPEvent event = objectMapper.treeToValue(item, UCDPEvent.class);
+
+                LocalDateTime dateTime = LocalDateTime.parse(event.getDate_start());
+                event.setMonth(dateTime.getMonthValue());
+
+                events.add(event);
+            }
+
+            return events;
+
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     // Запрос следующей страницы (в случае, если события разделены на несколько страниц)
-    public String getNextPageUrl (JSONObject response) {
-        return (String) response.get("NextPageUrl");
+    public String getNextPageUrl (String json) throws JsonProcessingException {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode rootNode = objectMapper.readTree(json);
+
+        String url = rootNode.get("NextPageUrl").asText();
+
+        return url;
     }
 
     // Запись событий в базу из ответа ucdp
-    public void saveEventResponse (JSONObject response) {
+    public void saveEventResponse (List<UCDPEvent> events) {
 
-        // Достаем массив событий
-        JSONArray result = (JSONArray) response.get("Result");
-        Iterator resultItr = result.iterator();
-
-
-        Long id_ucdp;
-
-        int year, month, type_of_violence;
-        String conflict_name, dyad_name, side_a, side_b, adm_1, adm_2, country, region, date_start, date_end;
-        Long conflict_id, dyad_id, side_a_id, side_b_id, priogrid_gid, country_id, date_prec;
-        Long deaths_a, deaths_b, deaths_civilians, deaths_unknown, deaths_all;
-        double latitude, longitude;
-
-            // Выводим в цикле данные массива
-        while (resultItr.hasNext()) {
-            JSONObject event = (JSONObject) resultItr.next();
-
-            LocalDateTime dateTime = LocalDateTime.parse(event.get("date_start").toString());
-
-            id_ucdp             = (Long) event.get("id");
-            year                = ((Long) event.get("year")).intValue();
-            month               = dateTime.getMonthValue();
-            type_of_violence    = ((Long) event.get("type_of_violence")).intValue();
-            conflict_name       = (event.get("conflict_name") == null) ? "" : event.get("conflict_name").toString();
-            dyad_name           = (event.get("dyad_name") == null) ? "" : event.get("dyad_name").toString();
-            side_a              = (event.get("side_a") == null) ? "" : event.get("side_a").toString();
-            side_b              = (event.get("side_b") == null) ? "" : event.get("side_b").toString();
-            adm_1               = (event.get("adm_1") == null) ? "" : event.get("adm_1").toString();
-            adm_2               = (event.get("adm_2") == null) ? "" : event.get("adm_2").toString();
-            country             = (event.get("country") == null) ? "" : event.get("country").toString();
-            region              = (event.get("region") == null) ? "" : event.get("region").toString();
-            date_start          = (event.get("date_start") == null) ? "" : event.get("date_start").toString();
-            date_end            = (event.get("date_end") == null) ? "" : event.get("date_end").toString();
-            conflict_id         = (Long) event.get("conflict_new_id");
-            dyad_id             = (Long) event.get("dyad_new_id");
-            side_a_id           = (Long) event.get("side_a_new_id");
-            side_b_id           = (Long) event.get("side_b_new_id");
-            priogrid_gid        = (Long) event.get("priogrid_gid");
-            country_id          = (Long) event.get("country_id");
-            date_prec           = (Long) event.get("date_prec");
-            deaths_a            = (Long) event.get("deaths_a");
-            deaths_b            = (Long) event.get("deaths_b");
-            deaths_civilians    = (Long) event.get("deaths_civilians");
-            deaths_unknown      = (Long) event.get("deaths_unknown");
-            deaths_all          = (Long) event.get("best");
-            latitude            = (event.get("latitude") == null) ? 0 : (double) event.get("latitude");
-            longitude           = (event.get("longitude") == null) ? 0 : (double) event.get("longitude");
-
-            UCDPEvent ucdpEvent = new UCDPEvent(id_ucdp, year, month, type_of_violence, conflict_name, dyad_name, side_a, side_b, adm_1, adm_2, country, region, date_start, date_end, conflict_id, dyad_id, side_a_id, side_b_id, priogrid_gid, country_id, date_prec, deaths_a, deaths_b, deaths_civilians, deaths_unknown, deaths_all, latitude, longitude);
-            ucdpEventRepository.save(ucdpEvent);
+        for (UCDPEvent event : events) {
+            ucdpEventRepository.save(event);
             this.rowsSaved++;
         }
-    }
-
-    // Вывод ответа ucdp в консоль
-    public void printEventResponse (JSONObject response) {
-        // Достаём TotalCount and TotalPages
-        System.out.println("TotalCount: " + response.get("TotalCount"));
-        System.out.println("TotalPages: " + response.get("TotalPages"));
-        // Достаем массив номеров
-        JSONArray result = (JSONArray) response.get("Result");
-        Iterator resultItr = result.iterator();
-        System.out.println("event data: ");
-        // Выводим в цикле данные массива
-        while (resultItr.hasNext()) {
-            JSONObject event = (JSONObject) resultItr.next();
-            System.out.println("- " + event.get("id"));
-            System.out.println("- " + event.get("year"));
-            System.out.println("- " + event.get("type_of_violence"));
-            System.out.println("- " + event.get("conflict_name"));
-            System.out.println("- " + event.get("conflict_new_id"));
-            System.out.println("- " + event.get("dyad_name"));
-            System.out.println("- " + event.get("dyad_new_id"));
-            System.out.println("- " + event.get("side_a"));
-            System.out.println("- " + event.get("side_a_new_id"));
-            System.out.println("- " + event.get("side_b"));
-            System.out.println("- " + event.get("side_b_new_id"));
-            System.out.println("- " + event.get("adm_1"));
-            System.out.println("- " + event.get("adm_2"));
-            System.out.println("- " + event.get("latitude"));
-            System.out.println("- " + event.get("longitude"));
-            System.out.println("- " + event.get("priogrid_gid"));
-            System.out.println("- " + event.get("country"));
-            System.out.println("- " + event.get("country_id"));
-            System.out.println("- " + event.get("region"));
-            System.out.println("- " + event.get("date_prec"));
-            System.out.println("- " + event.get("date_start"));
-            System.out.println("- " + event.get("date_end"));
-            System.out.println("- " + event.get("deaths_a"));
-            System.out.println("- " + event.get("deaths_b"));
-            System.out.println("- " + event.get("deaths_civilians"));
-            System.out.println("- " + event.get("deaths_unknown"));
-            System.out.println("- " + event.get("best"));
-
-        }
-
     }
 }
