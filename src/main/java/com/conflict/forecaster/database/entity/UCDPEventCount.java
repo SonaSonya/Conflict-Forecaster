@@ -6,34 +6,37 @@ import jakarta.persistence.*;
 public class UCDPEventCount {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(insertable = false)
     private Long id;
 
     private int year, month;
     @Column(name="type_of_violence")
-    private int typeOfViolence;
+    private int type_of_violence;
     @Column(name="violence_count")
-    private int violenceCount;
+    private int violence_count;
     @Column(name="death_count")
-    private int deathCount;
+    private int death_count;
     @Column(name="country_id")
-    private int countryId;
+    private int country_id;
 
     // Конструкторы
     public UCDPEventCount() {
 
     }
 
-    public UCDPEventCount(int country_id, int year, int month, int type_of_violence, int death_count, int violence_count) {
+    public UCDPEventCount(Long id, int country_id, int year, int month, int type_of_violence, int death_count, int violence_count) {
+        this.id = id;
         this.year = year;
         this.month = month;
-        this.typeOfViolence = type_of_violence;
-        this.violenceCount = violence_count;
-        this.deathCount = death_count;
-        this.countryId = country_id;
+        this.type_of_violence = type_of_violence;
+        this.violence_count = violence_count;
+        this.death_count = death_count;
+        this.country_id = country_id;
     }
 
     // Геттеры и сеттеры
+
 
     public Long getId() {
         return id;
@@ -60,34 +63,34 @@ public class UCDPEventCount {
     }
 
     public int getType_of_violence() {
-        return typeOfViolence;
+        return type_of_violence;
     }
 
     public void setType_of_violence(int type_of_violence) {
-        this.typeOfViolence = type_of_violence;
+        this.type_of_violence = type_of_violence;
     }
 
     public int getViolence_count() {
-        return violenceCount;
+        return violence_count;
     }
 
     public void setViolence_count(int violence_count) {
-        this.violenceCount = violence_count;
+        this.violence_count = violence_count;
     }
 
     public int getDeath_count() {
-        return deathCount;
+        return death_count;
     }
 
     public void setDeath_count(int death_count) {
-        this.deathCount = death_count;
+        this.death_count = death_count;
     }
 
     public int getCountry_id() {
-        return countryId;
+        return country_id;
     }
 
     public void setCountry_id(int country_id) {
-        this.countryId = country_id;
+        this.country_id = country_id;
     }
 }

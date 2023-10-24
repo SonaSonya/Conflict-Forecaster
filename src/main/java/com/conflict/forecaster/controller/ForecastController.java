@@ -32,37 +32,22 @@ public class ForecastController {
         this.predictionService = predictionService;
     }
 
-    @GetMapping("/test")
-    public ResponseEntity<String> test() throws IOException, ParseException {
-
-        //TODO: Если в базе уже есть данные, то они удаляются
-
-        int rowsSaved = api.saveEvents(501, new String[]{"20.0.8"});
-
-        //TODO: На выходе количество записанных строк
-        return new ResponseEntity<>(HttpStatus.OK);
-    }
     // Сохранение событий ucdp в базу проекта
     @PostMapping("/forecaster/data/initialize")
-    public ResponseEntity<String> initialize(@RequestParam(name="start_date", required=true, defaultValue="18.0.1") String startDate,
+    public ResponseEntity<Long> initialize(@RequestParam(name="start_date", required=true, defaultValue="18.0.1") String startDate,
                                              @RequestParam(name="end_date", required=true, defaultValue="23.0.7") String endDate) throws IOException, ParseException {
 
-        //TODO: Если в базе уже есть данные, то они удаляются
+        Long rowsSaved = api.initialize(startDate, endDate);
 
-        //int rowsSaved = api.saveEvents2018_2022();
-
-        //TODO: На выходе количество записанных строк
-        return new ResponseEntity<>(HttpStatus.OK);
+        return new ResponseEntity<>(rowsSaved, HttpStatus.OK);
     }
 
     @PostMapping("/forecaster/data/update")
-    public ResponseEntity<String> update(@RequestParam(name="end_date", required=true) String endDate) throws IOException, ParseException {
+    public ResponseEntity<Long> update(@RequestParam(name="end_date", required=true) String endDate) throws IOException, ParseException {
 
-        //TODO: Определение последней записанной даты в базе
-        //TODO: Добавление к базе новых значений по датам
+        Long rowsSaved = api.update(endDate);
 
-        //TODO: На выходе количество записанных строк
-        return new ResponseEntity<>(HttpStatus.OK);
+        return new ResponseEntity<>(rowsSaved, HttpStatus.OK);
     }
 
     // Получение статуса по загруженным данным, какие даты и страны в наличии

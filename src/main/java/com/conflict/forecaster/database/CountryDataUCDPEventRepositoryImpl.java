@@ -17,8 +17,6 @@ public class CountryDataUCDPEventRepositoryImpl implements CountryDataUCDPEventR
     }
 
     // Вывести список стран
-    // @Query("select distinct new com.conflict.forecaster.database.countrydata(a.country_id, a.country) from UCDPEvent a")
-    //@Query(value = "select distinct a.country_id, a.country from UCDPEvent a" ,nativeQuery = true)
     public List<CountryData> findCountries()
     {
         String sql = "select distinct a.country_id, a.country from UCDPEvent a";

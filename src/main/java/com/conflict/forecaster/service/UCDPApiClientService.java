@@ -1,7 +1,9 @@
 package com.conflict.forecaster.service;
 
+import com.conflict.forecaster.database.UCDPEventCountRepository;
 import com.conflict.forecaster.database.entity.UCDPEvent;
 import com.conflict.forecaster.database.UCDPEventRepository;
+import com.conflict.forecaster.database.entity.UCDPEventCount;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -81,43 +83,112 @@ public class UCDPApiClientService {
             552, // Zimbabwe
     };
 
-    String[] versions2023 = {"23.0.1", "23.0.2", "23.0.3", "23.0.4", "23.0.5", "23.0.6", "23.0.7"};
-    String[] versions2018_2022 = {"18.0.1", "18.0.2", "18.0.3", "18.0.4", "18.0.5", "18.0.6", "18.0.7", "18.0.8", "18.0.9", "18.0.10", "18.0.11", "18.0.12",
+    String[] versions = {"18.0.1", "18.0.2", "18.0.3", "18.0.4", "18.0.5", "18.0.6", "18.0.7", "18.0.8", "18.0.9", "18.0.10", "18.0.11", "18.0.12",
             "19.0.1", "19.0.2", "19.0.3", "19.0.4", "19.0.5", "19.0.6", "19.0.7", "19.0.8", "19.0.9", "19.0.10", "19.0.11", "19.0.12",
             "20.0.1", "20.0.2", "20.0.3", "20.0.4", "20.0.5", "20.0.6", "20.0.7", "20.0.8", "20.0.9", "20.0.10", "20.0.11", "20.0.12",
             "21.0.1", "21.0.2", "21.0.3", "21.0.4", "21.0.5", "21.0.6", "21.0.7", "21.0.8", "21.0.9", "21.0.10", "21.0.11", "21.0.12",
             "22.0.1", "22.0.2", "22.0.3", "22.0.4", "22.0.5", "22.0.6", "22.0.7", "22.0.8", "22.0.9", "22.0.10", "22.0.11", "22.0.12",
+            "23.0.1", "23.0.2", "23.0.3", "23.0.4", "23.0.5", "23.0.6", "23.0.7"
     };
 
     private UCDPEventRepository ucdpEventRepository;
-    private int rowsSaved;
+    private UCDPEventCountRepository ucdpEventCountRepository;
 
-    public UCDPApiClientService(UCDPEventRepository ucdpEventRepository) {
+    public UCDPApiClientService(UCDPEventRepository ucdpEventRepository, UCDPEventCountRepository ucdpEventCountRepository) {
         this.ucdpEventRepository = ucdpEventRepository;
+        this.ucdpEventCountRepository = ucdpEventCountRepository;
     }
 
-    // Сохранение событий из UCDP за 2018-2022 годы для всех африканских стран (для заполнения таблицы, использовалась 1 раз)
-    public void saveEvents2018_2022 () throws IOException, ParseException {
+    public boolean hasData() {
+        List<UCDPEvent> data = (List<UCDPEvent>) ucdpEventRepository.findAll();
+        return !data.isEmpty();
+    }
+
+    public void clearData() {
+        ucdpEventRepository.deleteAll();
+        ucdpEventCountRepository.deleteAll();
+    }
+
+    public long initialize (String startDate, String endDate) throws IOException, ParseException {
+        if (hasData()) {
+            clearData();
+        }
+
+        long rowsSaved = fillDatabase(startDate, endDate);
+
+        initializeUCDPEventCount();
+        return rowsSaved;
+    }
+
+    public Long update (String endDate) throws IOException, ParseException {
+        UCDPEvent latestEvent = ucdpEventRepository.findFirst1ByOrderByYearAscMonthAsc().get(0);
+        String latestVersion = latestEvent.getMonth() + ".0." + latestEvent.getYear();
+
+        long rowsSaved = fillDatabase(latestVersion, endDate);
+
+        initializeUCDPEventCount();
+        return rowsSaved;
+    }
+
+    public long fillDatabase (String startDate, String endDate) throws IOException, ParseException {
+
+        String[] versionsArray = getVersions(startDate, endDate);
+
+        long rowsSaved = 0;
         var i = 0;
         while (i < africanCountries.length) {
-            saveEvents(africanCountries[i], versions2018_2022);
+            rowsSaved += saveEvents(africanCountries[i], versionsArray);
             i++;
+        }
+        return rowsSaved;
+    }
+
+    private void initializeUCDPEventCount() {
+        List<UCDPEventCount> counts = ucdpEventCountRepository.findCounts();
+        for (UCDPEventCount c : counts ) {
+            if (c != null) {
+                System.out.println(c.getCountry_id() + " " + c.getYear() + " " + c.getMonth() + " " + c.getType_of_violence() + " " + c.getDeath_count() + " " + c.getViolence_count());
+            } else {
+                System.out.println("Object is null");
+            }
+            //UCDPEventCount ucdpEventCount = new UCDPEventCount(((Long)c[0]).intValue(),(int)c[1] , (int)c[2], (int)c[3], ((BigDecimal)c[4]).intValue(), ((Long)c[5]).intValue());
+            //ucdpEventCountRepository.save(ucdpEventCount);
         }
     }
 
-    // Сохранение событий из UCDP за 2023 год для всех африканских стран
-    public void saveEvents2023 () throws IOException, ParseException {
-        var i = 0;
-        while (i < africanCountries.length) {
-            saveEvents(africanCountries[i], versions2023);
-            i++;
+    public String[] getVersions(String startDate, String endDate) {
+        int index = 0;
+        boolean insideRange = false;
+        ArrayList<String> rangeList = new ArrayList<>();
+
+        while (index < versions.length) {
+            String version = versions[index];
+
+            if (version.equals(startDate)) {
+                insideRange = true;
+            }
+
+            if (insideRange) {
+                rangeList.add(version); // Добавляем версии в ArrayList
+            }
+
+            if (version.equals(endDate)) {
+                insideRange = false;
+                break;
+            }
+
+            index++;
         }
+
+        // Преобразуем ArrayList в массив
+        String[] rangeArray = rangeList.toArray(new String[rangeList.size()]);
+        return rangeArray;
     }
 
     // Запрос событий из UCDP для страны и версий (месяцев), сохранение результатов в базу
-    public int saveEvents (int country, String[] versions) throws IOException, ParseException {
+    public long saveEvents (int country, String[] versions) throws IOException, ParseException {
 
-        this.rowsSaved = 0;
+        long rowsSaved = 0;
         var i = 0;
         while (i < versions.length) {
             // Для каждой версии (месяца)
@@ -127,7 +198,7 @@ public class UCDPApiClientService {
             while (!url.isEmpty()) {
                 String json = requestEvents(url);
                 List<UCDPEvent> events = extractObjectsFromJson(json);
-                saveEventResponse(events);
+                rowsSaved += saveEventResponse(events);
 
                 url = getNextPageUrl(json);
             }
@@ -135,7 +206,7 @@ public class UCDPApiClientService {
             i++;
         }
 
-        return this.rowsSaved;
+        return rowsSaved;
     }
 
     // Функция генерации url для доступа к api ucdp
@@ -188,11 +259,14 @@ public class UCDPApiClientService {
     }
 
     // Запись событий в базу из ответа ucdp
-    public void saveEventResponse (List<UCDPEvent> events) {
+    public long saveEventResponse (List<UCDPEvent> events) {
+        long rowsSaved = 0;
 
         for (UCDPEvent event : events) {
             ucdpEventRepository.save(event);
-            this.rowsSaved++;
+            rowsSaved++;
         }
+
+        return rowsSaved;
     }
 }
