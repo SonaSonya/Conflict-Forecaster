@@ -144,15 +144,9 @@ public class UCDPApiClientService {
     }
 
     private void initializeUCDPEventCount() {
-        List<UCDPEventCount> counts = ucdpEventCountRepository.findCounts();
+        List<UCDPEventCount> counts = ucdpEventRepository.findCounts();
         for (UCDPEventCount c : counts ) {
-            if (c != null) {
-                System.out.println(c.getCountry_id() + " " + c.getYear() + " " + c.getMonth() + " " + c.getType_of_violence() + " " + c.getDeath_count() + " " + c.getViolence_count());
-            } else {
-                System.out.println("Object is null");
-            }
-            //UCDPEventCount ucdpEventCount = new UCDPEventCount(((Long)c[0]).intValue(),(int)c[1] , (int)c[2], (int)c[3], ((BigDecimal)c[4]).intValue(), ((Long)c[5]).intValue());
-            //ucdpEventCountRepository.save(ucdpEventCount);
+            ucdpEventCountRepository.save(c);
         }
     }
 
