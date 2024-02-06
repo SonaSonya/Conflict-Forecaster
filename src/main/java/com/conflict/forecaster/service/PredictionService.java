@@ -26,7 +26,7 @@ public class PredictionService {
         this.arimaParams = arimaConfig.arimaConf();
     }
 
-    private double[] getArrayOfViolenceCounts (List<UCDPEventCount> ucdpEventCounts) {
+    public double[] getArrayOfViolenceCounts (List<UCDPEventCount> ucdpEventCounts) {
 
         UCDPEventCount firstEvent = ucdpEventCountRepository.findFirstByOrderByYearAscMonthAsc();
         UCDPEventCount lastEvent = ucdpEventCountRepository.findFirstByOrderByYearDescMonthDesc();
@@ -73,7 +73,7 @@ public class PredictionService {
         return violenceCounts.stream().mapToDouble(i->i).toArray();
     }
 
-    private ObjectNode getResponse (double[] forecastData) {
+    protected ObjectNode getResponse (double[] forecastData) {
         ObjectMapper mapper = new ObjectMapper();
         ArrayNode forecastsNode = mapper.createArrayNode();
         ObjectNode response = mapper.createObjectNode();

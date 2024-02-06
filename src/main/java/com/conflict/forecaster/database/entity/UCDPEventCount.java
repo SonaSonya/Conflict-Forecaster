@@ -6,8 +6,8 @@ import jakarta.persistence.*;
 public class UCDPEventCount {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(insertable = false)
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    //@Column(insertable = false)
     private Long id;
 
     private int year, month;
@@ -25,8 +25,7 @@ public class UCDPEventCount {
 
     }
 
-    public UCDPEventCount(Long id, int country_id, int year, int month, int type_of_violence, int death_count, int violence_count) {
-        this.id = id;
+    public UCDPEventCount(int country_id, int year, int month, int type_of_violence, int death_count, int violence_count) {
         this.year = year;
         this.month = month;
         this.type_of_violence = type_of_violence;

@@ -25,8 +25,8 @@ public class UCDPEventService {
     }
 
     public ObjectNode getStatus () {
-        UCDPEvent earliestEvent = ucdpEventRepository.findFirst1ByOrderByYearDescMonthDesc().get(0);
-        UCDPEvent latestEvent = ucdpEventRepository.findFirst1ByOrderByYearAscMonthAsc().get(0);
+        UCDPEvent earliestEvent = ucdpEventRepository.findFirst1ByOrderByYearAscMonthAsc().get(0);
+        UCDPEvent latestEvent = ucdpEventRepository.findFirst1ByOrderByYearDescMonthDesc().get(0);
         List<CountryData> countries = ucdpEventRepository.findCountries();
 
         ObjectMapper mapper = new ObjectMapper();

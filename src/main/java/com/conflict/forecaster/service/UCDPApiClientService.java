@@ -111,6 +111,7 @@ public class UCDPApiClientService {
 
     public long initialize (String startDate, String endDate) throws IOException, ParseException {
         if (hasData()) {
+            System.out.println("clearing");
             clearData();
         }
 
@@ -137,6 +138,7 @@ public class UCDPApiClientService {
         long rowsSaved = 0;
         var i = 0;
         while (i < africanCountries.length) {
+            System.out.println("country");
             rowsSaved += saveEvents(africanCountries[i], versionsArray);
             i++;
         }
@@ -144,9 +146,14 @@ public class UCDPApiClientService {
     }
 
     private void initializeUCDPEventCount() {
+        ucdpEventCountRepository.deleteAll();
         List<UCDPEventCount> counts = ucdpEventRepository.findCounts();
+        //Long i = Long.valueOf(1);
         for (UCDPEventCount c : counts ) {
+            //c.setId(i);
+            System.out.println(c.getId());
             ucdpEventCountRepository.save(c);
+            //i++;
         }
     }
 

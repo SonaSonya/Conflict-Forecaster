@@ -25,6 +25,8 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	implementation 'com.workday:timeseries-forecast:1.1.1'
 	implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+	implementation 'org.nd4j:nd4j-native-platform:0.9.1'
+	implementation 'org.deeplearning4j:deeplearning4j-core:0.9.1'
 }
 
 tasks.named('test') {
