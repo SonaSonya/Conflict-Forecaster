@@ -80,7 +80,16 @@ public class ForecastController {
     @CrossOrigin(origins = "http://localhost:5173")
     @GetMapping("/test")
     public ResponseEntity<ObjectNode> test() {
-        lstmPredictionService.test();
+        lstmPredictionService.test3();
+
+        return new ResponseEntity<>(null, HttpStatus.OK);
+    }
+
+    @CrossOrigin(origins = "http://localhost:5173")
+    @GetMapping("/gridSearch")
+    public ResponseEntity<ObjectNode> gridSearch() {
+        predictionService.gridSearch();
+
         return new ResponseEntity<>(null, HttpStatus.OK);
     }
 

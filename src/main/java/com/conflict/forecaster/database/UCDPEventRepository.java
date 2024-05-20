@@ -11,10 +11,10 @@ import java.util.List;
 @Repository
 public interface UCDPEventRepository extends CrudRepository<UCDPEvent, Long>, CountryDataUCDPEventRepository {
 
-    // Найти запись с самым ранним значением года и месяца
+    // Найти запись с самым поздним значением года и месяца
     List<UCDPEvent> findFirst1ByOrderByYearDescMonthDesc ();
 
-    // Найти запись с самым поздним значением года и месяца
+    // Найти запись с самым ранним значением года и месяца
     List<UCDPEvent> findFirst1ByOrderByYearAscMonthAsc ();
 
 }

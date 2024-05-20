@@ -22,10 +22,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class UCDPApiClientService {
@@ -88,7 +85,8 @@ public class UCDPApiClientService {
             "20.0.1", "20.0.2", "20.0.3", "20.0.4", "20.0.5", "20.0.6", "20.0.7", "20.0.8", "20.0.9", "20.0.10", "20.0.11", "20.0.12",
             "21.0.1", "21.0.2", "21.0.3", "21.0.4", "21.0.5", "21.0.6", "21.0.7", "21.0.8", "21.0.9", "21.0.10", "21.0.11", "21.0.12",
             "22.0.1", "22.0.2", "22.0.3", "22.0.4", "22.0.5", "22.0.6", "22.0.7", "22.0.8", "22.0.9", "22.0.10", "22.0.11", "22.0.12",
-            "23.0.1", "23.0.2", "23.0.3", "23.0.4", "23.0.5", "23.0.6", "23.0.7"
+            "23.0.1", "23.0.2", "23.0.3", "23.0.4", "23.0.5", "23.0.6", "23.0.7", "23.0.8", "23.0.9", "23.0.10", "23.0.11", "23.0.12",
+            "24.0.1", "24.0.2"
     };
 
     private UCDPEventRepository ucdpEventRepository;
@@ -122,11 +120,12 @@ public class UCDPApiClientService {
     }
 
     public Long update (String endDate) throws IOException, ParseException {
-        UCDPEvent latestEvent = ucdpEventRepository.findFirst1ByOrderByYearAscMonthAsc().get(0);
-        String latestVersion = latestEvent.getMonth() + ".0." + latestEvent.getYear();
-
+        UCDPEvent latestEvent = ucdpEventRepository.findFirst1ByOrderByYearDescMonthDesc().get(0);
+        String latestVersion = (latestEvent.getYear() % 100) + ".0." + latestEvent.getMonth()  ;
+        System.out.println("latest " + latestVersion);
+        System.out.println("endDate " + endDate);
         long rowsSaved = fillDatabase(latestVersion, endDate);
-
+        System.out.println("rowsSaved " + rowsSaved);
         initializeUCDPEventCount();
         return rowsSaved;
     }
@@ -134,11 +133,12 @@ public class UCDPApiClientService {
     public long fillDatabase (String startDate, String endDate) throws IOException, ParseException {
 
         String[] versionsArray = getVersions(startDate, endDate);
-
+        System.out.println("versions:");
+        System.out.println(Arrays.toString(versionsArray));
         long rowsSaved = 0;
         var i = 0;
         while (i < africanCountries.length) {
-            System.out.println("country");
+            System.out.println("country " + africanCountries[i]);
             rowsSaved += saveEvents(africanCountries[i], versionsArray);
             i++;
         }
@@ -151,10 +151,10 @@ public class UCDPApiClientService {
         //Long i = Long.valueOf(1);
         for (UCDPEventCount c : counts ) {
             //c.setId(i);
-            System.out.println(c.getId());
             ucdpEventCountRepository.save(c);
             //i++;
         }
+        System.out.println("here");
     }
 
     public String[] getVersions(String startDate, String endDate) {
@@ -193,7 +193,7 @@ public class UCDPApiClientService {
         var i = 0;
         while (i < versions.length) {
             // Для каждой версии (месяца)
-
+            System.out.println(versions[i]);
             String url = getUrl(country, versions[i], 1000, 0);
 
             while (!url.isEmpty()) {
@@ -264,6 +264,7 @@ public class UCDPApiClientService {
         long rowsSaved = 0;
 
         for (UCDPEvent event : events) {
+            System.out.println("save row event: " + event.getMonth() + " " + event.getYear());
             ucdpEventRepository.save(event);
             rowsSaved++;
         }

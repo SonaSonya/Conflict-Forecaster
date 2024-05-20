@@ -12,6 +12,7 @@ import org.datavec.api.split.ListStringSplit;
 import org.datavec.api.writable.Writable;
 import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.INDArrayDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.eval.RegressionEvaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
@@ -167,6 +168,71 @@ public class LSTMPredictionService{
             System.out.print(" " + output);
         }
 
+    }
+
+    public void test3 () {
+        // Преобразование данных в формат, подходящий для обучения сети LSTM
+        List<INDArray> features = new ArrayList<>();
+        List<INDArray> labels = new ArrayList<>();
+
+        // Пример данных: временной ряд за несколько месяцев
+        double[] data = {10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0};
+
+        // Преобразование данных в формат "вход-выход" для обучения сети LSTM
+        for (int i = 0; i < data.length - 6; i++) {
+            INDArray input = Nd4j.create(new double[][]{{data[i]}, {data[i+1]}, {data[i+2]}, {data[i+3]}, {data[i+4]}, {data[i+5]}});
+            INDArray output = Nd4j.create(new double[][]{{data[i+6]}});
+            features.add(input);
+            labels.add(output);
+        }
+
+        int numExamples = features.size();
+        int numInputs = (int)features.get(0).size(1);
+        int numOutputs = 6; // количество прогнозируемых значений
+        int numHiddenNodes = 100;
+        int numEpochs = 80;
+        int batchSize = 32;
+
+        // Создание конфигурации сети LSTM
+        MultiLayerConfiguration config = new NeuralNetConfiguration.Builder()
+                .seed(123)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Adam(0.001))
+                .list()
+                .layer(new LSTM.Builder().nIn(numInputs).nOut(numHiddenNodes)
+                        .activation(Activation.TANH).build())
+                .layer(new RnnOutputLayer.Builder().nIn(numHiddenNodes).nOut(numOutputs)
+                        .activation(Activation.IDENTITY).lossFunction(LossFunctions.LossFunction.MSE)
+                        .build())
+                .build();
+
+        // Создание сети LSTM
+        MultiLayerNetwork network = new MultiLayerNetwork(config);
+        network.init();
+
+        // Создание набора данных для обучения сети LSTM
+        List<DataSet> dataSets = new ArrayList<>();
+        for (int i = 0; i < numExamples; i++) {
+            dataSets.add(new DataSet(features.get(i), labels.get(i)));
+        }
+
+        // Обучение сети LSTM
+        DataSetIterator iterator = new ListDataSetIterator<>(dataSets, batchSize);
+        for (int i = 0; i < numEpochs; i++) {
+            network.fit(iterator);
+        }
+
+        // Получение прогноза временного ряда на 6 месяцев вперед
+        INDArray input = Nd4j.create(new double[][]{{data[data.length - 6]}, {data[data.length - 5]}, {data[data.length - 4]}, {data[data.length - 3]}, {data[data.length - 2]}, {data[data.length - 1]}});
+        List<INDArray> predictions = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            INDArray prediction = network.output(input);
+            predictions.add(prediction);
+            input = Nd4j.hstack(input.get(NDArrayIndex.interval(1, input.size(0))), prediction);
+        }
+
+        // Вывод результата
+        System.out.println("Прогноз на 6 месяцев вперед: " + predictions);
     }
 
     /*
