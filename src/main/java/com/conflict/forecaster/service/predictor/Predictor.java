@@ -1,7 +1,9 @@
 package com.conflict.forecaster.service.predictor;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.springframework.stereotype.Component;
 
+@Component
 public class Predictor {
 
     private PredictionService predictionStrategy;

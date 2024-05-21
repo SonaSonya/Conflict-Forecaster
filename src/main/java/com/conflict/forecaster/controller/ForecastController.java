@@ -4,6 +4,8 @@ import com.conflict.forecaster.service.LSTM.LSTMPredictionService;
 import com.conflict.forecaster.service.PredictionService;
 import com.conflict.forecaster.service.UCDPApiClientService;
 import com.conflict.forecaster.service.UCDPEventService;
+import com.conflict.forecaster.service.predictor.ArimaPredictionService;
+import com.conflict.forecaster.service.predictor.Predictor;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,18 +22,21 @@ public class ForecastController {
     private UCDPEventService ucdpEventService;
     private PredictionService predictionService;
     private LSTMPredictionService lstmPredictionService;
-
+    private Predictor predictor;
+    private ArimaPredictionService arimaPredictionService;
     @Autowired
     public ForecastController (
             UCDPApiClientService api,
             UCDPEventService ucdpEventService,
-            PredictionService predictionService,
-            LSTMPredictionService lstmPredictionService
+            LSTMPredictionService lstmPredictionService,
+            Predictor predictor,
+            ArimaPredictionService arimaPredictionService
     ) {
         this.api = api;
         this.ucdpEventService = ucdpEventService;
-        this.predictionService = predictionService;
         this.lstmPredictionService = lstmPredictionService;
+        this.predictor = predictor;
+        this.arimaPredictionService = arimaPredictionService;
     }
 
     // Сохранение событий ucdp в базу проекта
@@ -70,10 +75,20 @@ public class ForecastController {
     @CrossOrigin(origins = "http://localhost:5173")
     @GetMapping("/forecaster/predict")
     public ResponseEntity<ObjectNode> predict(@RequestParam(name="country_id", required=true) int countryId,
-                          @RequestParam(name="violence_type", required=true) int violenceType,
-                          @RequestParam(name="timespan", required=true) int timespan) {
+        @RequestParam(name="violence_type", required=true) int violenceType,
+        @RequestParam(name="timespan", required=true) int timespan,
+        @RequestParam(name="start_year", required=true) int startYear,
+        @RequestParam(name="start_month", required=true) int startMonth,
+        @RequestParam(name="last_year", required=true) int lastYear,
+        @RequestParam(name="last_month", required=true) int lastMonth,
+        @RequestParam(name="model", required=true) String model
+    ) {
+        if (model.equals("arima")) {
+            predictor.setPredictionStrategy(arimaPredictionService);
+        }
 
-        ObjectNode prediction = predictionService.predict(countryId,violenceType,timespan);
+        ObjectNode prediction = predictor.predict(countryId, violenceType, startYear, startMonth, lastYear, lastMonth, timespan);
+        //ObjectNode prediction = predictionService.predict(countryId,violenceType,timespan);
         return new ResponseEntity<>(prediction, HttpStatus.OK);
     }
 
