@@ -95,7 +95,7 @@ public class ForecastController {
     @CrossOrigin(origins = "http://localhost:5173")
     @GetMapping("/test")
     public ResponseEntity<ObjectNode> test() {
-        lstmPredictionService.test3();
+        lstmPredictionService.test4();
 
         return new ResponseEntity<>(null, HttpStatus.OK);
     }

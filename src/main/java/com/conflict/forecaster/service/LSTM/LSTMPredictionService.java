@@ -39,6 +39,7 @@ import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.postgresql.largeobject.BlobInputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -233,6 +234,103 @@ public class LSTMPredictionService{
 
         // Вывод результата
         System.out.println("Прогноз на 6 месяцев вперед: " + predictions);
+    }
+
+    public void test4() {
+        int lstmLayerSize = 50;
+        int miniBatchSize = 32;
+        int exampleLength = 100; // length of each training sequence
+        int numEpochs = 50;
+        int nIn = 1;
+        int nOut = 1;
+
+        // Prepare training data
+        List<double[]> timeSeriesData = generateDummyData(); // Replace with actual data
+        DataSetIterator trainData = createTrainingData(timeSeriesData, miniBatchSize, exampleLength, nIn, nOut);
+
+        // Normalize the data
+        NormalizerStandardize normalizer = new NormalizerStandardize();
+        normalizer.fit(trainData);
+        trainData.setPreProcessor(normalizer);
+
+        // Build the LSTM network
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Adam(0.001))
+                .list()
+                .layer(0, new LSTM.Builder().nIn(nIn).nOut(lstmLayerSize)
+                        .activation(Activation.TANH).build())
+                .layer(1, new LSTM.Builder().nIn(lstmLayerSize).nOut(lstmLayerSize)
+                        .activation(Activation.TANH).build())
+                .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                        .activation(Activation.IDENTITY)
+                        .nIn(lstmLayerSize).nOut(nOut).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+        net.setListeners(new ScoreIterationListener(20));
+
+        // Train the network
+        for (int i = 0; i < numEpochs; i++) {
+            trainData.reset();
+            net.fit(trainData);
+        }
+
+        // Save the model (optional)
+        // ModelSerializer.writeModel(net, new File("lstmModel.zip"), true);
+
+        // Test prediction
+        double[] testSequence = new double[]{/* test data */};
+        INDArray input = Nd4j.create(new int[]{1, testSequence.length, nIn});
+        for (int i = 0; i < testSequence.length; i++) {
+            input.putScalar(new int[]{0, i, 0}, testSequence[i]);
+        }
+        normalizer.transform(input);
+        INDArray output = net.rnnTimeStep(input);
+
+        // Denormalize the output manually
+        double[] predicted = output.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.point(0)).toDoubleVector();
+        denormalize(predicted, normalizer);
+
+        for (double v : predicted) {
+            System.out.println(v);
+        }
+    }
+
+    private static List<double[]> generateDummyData() {
+        List<double[]> data = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+            double[] series = new double[200];
+            for (int j = 0; j < series.length; j++) {
+                series[j] = Math.sin(0.01 * j) + Math.random() * 0.1;
+            }
+            data.add(series);
+        }
+        return data;
+    }
+
+    private static DataSetIterator createTrainingData(List<double[]> timeSeriesData, int miniBatchSize, int exampleLength, int nIn, int nOut) {
+        List<DataSet> list = new ArrayList<>();
+        for (double[] series : timeSeriesData) {
+            for (int i = 0; i < series.length - exampleLength - 1; i++) {
+                INDArray input = Nd4j.create(new int[]{1, exampleLength, nIn});
+                INDArray label = Nd4j.create(new int[]{1, exampleLength, nOut});
+                for (int j = 0; j < exampleLength; j++) {
+                    input.putScalar(new int[]{0, j, 0}, series[i + j]);
+                    label.putScalar(new int[]{0, j, 0}, series[i + j + 1]);
+                }
+                list.add(new DataSet(input, label));
+            }
+        }
+        return new org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator<>(list, miniBatchSize);
+    }
+
+    private static void denormalize(double[] data, NormalizerStandardize normalizer) {
+        for (int i = 0; i < data.length; i++) {
+            data[i] = data[i] * normalizer.getLabelStd().getDouble(0) + normalizer.getLabelMean().getDouble(0);
+        }
     }
 
     /*
