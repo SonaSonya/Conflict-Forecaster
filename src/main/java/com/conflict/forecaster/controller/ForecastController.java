@@ -1,10 +1,10 @@
 package com.conflict.forecaster.controller;
 
-import com.conflict.forecaster.service.LSTM.LSTMPredictionService;
 import com.conflict.forecaster.service.PredictionService;
 import com.conflict.forecaster.service.UCDPApiClientService;
 import com.conflict.forecaster.service.UCDPEventService;
 import com.conflict.forecaster.service.predictor.ArimaPredictionService;
+import com.conflict.forecaster.service.predictor.LstmPredictionService;
 import com.conflict.forecaster.service.predictor.Predictor;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.json.simple.parser.ParseException;
@@ -21,14 +21,14 @@ public class ForecastController {
     private UCDPApiClientService api;
     private UCDPEventService ucdpEventService;
     private PredictionService predictionService;
-    private LSTMPredictionService lstmPredictionService;
+    private LstmPredictionService lstmPredictionService;
     private Predictor predictor;
     private ArimaPredictionService arimaPredictionService;
     @Autowired
     public ForecastController (
             UCDPApiClientService api,
             UCDPEventService ucdpEventService,
-            LSTMPredictionService lstmPredictionService,
+            LstmPredictionService lstmPredictionService,
             Predictor predictor,
             ArimaPredictionService arimaPredictionService
     ) {
@@ -86,6 +86,9 @@ public class ForecastController {
         if (model.equals("arima")) {
             predictor.setPredictionStrategy(arimaPredictionService);
         }
+        if (model.equals("lstm")) {
+            predictor.setPredictionStrategy(lstmPredictionService);
+        }
 
         ObjectNode prediction = predictor.predict(countryId, violenceType, startYear, startMonth, lastYear, lastMonth, timespan);
         //ObjectNode prediction = predictionService.predict(countryId,violenceType,timespan);
@@ -95,7 +98,7 @@ public class ForecastController {
     @CrossOrigin(origins = "http://localhost:5173")
     @GetMapping("/test")
     public ResponseEntity<ObjectNode> test() {
-        lstmPredictionService.test4();
+        //lstmPredictionService.test4();
 
         return new ResponseEntity<>(null, HttpStatus.OK);
     }

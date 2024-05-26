@@ -19,14 +19,15 @@ import java.util.List;
 
 @Service
 public class ArimaPredictionService implements  PredictionService {
-
-    private UCDPEventCountRepository ucdpEventCountRepository;
     private ArimaParams arimaParams;
+    private PredictionResponse predictionResponse;
+    private PredictionDataPreparer predictionDataPreparer;
 
     @Autowired
-    public ArimaPredictionService(UCDPEventCountRepository ucdpEventCountRepository, ArimaConfig arimaConfig) {
-        this.ucdpEventCountRepository = ucdpEventCountRepository;
+    public ArimaPredictionService(ArimaConfig arimaConfig, PredictionResponse predictionResponse, PredictionDataPreparer predictionDataPreparer) {
         this.arimaParams = arimaConfig.arimaConf();
+        this.predictionResponse = predictionResponse;
+        this.predictionDataPreparer = predictionDataPreparer;
     }
 
 
@@ -41,20 +42,12 @@ public class ArimaPredictionService implements  PredictionService {
             int lastMonth,
             int timespan)
     {
-
-        int[] endYearAndMonth = addMonths(lastYear, lastMonth, timespan);
-
-        // Получение данных событий из базы данных
-        List<UCDPEventCount> ucdpEventCounts = ucdpEventCountRepository.findByCountryIdAndTypeOfViolence(countryId,
-                violenceType);
-
-        // Подготовка массива данных
-        double[] allDataArray = getArrayOfViolenceCounts(ucdpEventCounts,  startYear, startMonth, endYearAndMonth[0], endYearAndMonth[1]);
-        double[] dataArray = getArrayOfViolenceCounts(ucdpEventCounts, startYear, startMonth, lastYear, lastMonth);
+        double[] dataArray = predictionDataPreparer.getDataArray(countryId, violenceType, startYear, startMonth, lastYear, lastMonth, timespan);
+        double[] allDataArray = predictionDataPreparer.getAllDataArray(countryId, violenceType, startYear, startMonth, lastYear, lastMonth, timespan);
 
         double[] forecastData = predictArima(dataArray, timespan);
 
-        return getResponse(forecastData, dataArray, allDataArray);
+        return predictionResponse.getResponse(forecastData, dataArray, allDataArray);
     }
 
 
@@ -70,85 +63,8 @@ public class ArimaPredictionService implements  PredictionService {
         return forecastResult.getForecast();
     }
 
-    private double[] getArrayOfViolenceCounts(List<UCDPEventCount> ucdpEventCounts, int startYear, int startMonth, int lastYear, int lastMonth) {
-        boolean hasEvent = false;
-        int violenceCount = 0;
-        int year = startYear;
-        int month = startMonth;
 
-        ArrayList<Integer> violenceCounts = new ArrayList<>();
 
-        while (year < lastYear || (year == lastYear && month <= lastMonth)) {
-
-            for (UCDPEventCount ucdpEventCount : ucdpEventCounts) {
-                if (ucdpEventCount.getMonth() == month && ucdpEventCount.getYear() == year) {
-                    hasEvent = true;
-                    violenceCount = ucdpEventCount.getViolence_count();
-                    break;
-                }
-            }
-
-            if (hasEvent) {
-                violenceCounts.add(violenceCount);
-            } else {
-                violenceCounts.add(0);
-            }
-
-            hasEvent = false;
-            violenceCount = 0;
-            if (month >= 12) {
-                month = 1;
-                year++;
-            } else {
-                month++;
-            }
-        }
-
-        return violenceCounts.stream().mapToDouble(i -> i).toArray();
-    }
-
-    protected ObjectNode getResponse(double[] forecastData, double[] dataBeforeForecast, double[] actualData) {
-        ObjectMapper mapper = new ObjectMapper();
-        ArrayNode forecastsNode = mapper.createArrayNode();
-        ArrayNode actualNode = mapper.createArrayNode();
-        ArrayNode dataWithForecastsNode = mapper.createArrayNode();
-        ObjectNode response = mapper.createObjectNode();
-        double[] dataWithForecasts = ArrayUtils.addAll(dataBeforeForecast, forecastData);
-
-        int month = 0;
-
-        for (double forecast : forecastData) {
-            ObjectNode forecastNode = mapper.createObjectNode();
-            forecastNode.put("month", month);
-            forecastNode.put("amount", forecast);
-
-            forecastsNode.add(forecastNode);
-            month++;
-        }
-
-        for (int i = 0; i < actualData.length; i++) {
-            actualNode.add(actualData[i]);
-        }
-
-        for (int i = 0; i < dataWithForecasts.length; i++) {
-            dataWithForecastsNode.add(dataWithForecasts[i]);
-        }
-
-        response.set("forecasts", forecastsNode);
-        response.set("dataWithForecasts", dataWithForecastsNode);
-        response.set("actual", actualNode);
-
-        return response;
-    }
-
-    public static int[] addMonths(int year, int month, int monthsToAdd) {
-        month += monthsToAdd - 1;
-        year += month / 12;
-        month %= 12;
-        month++;
-
-        return new int[] {year, month};
-    }
 
 //    public void gridSearch() {
 //
